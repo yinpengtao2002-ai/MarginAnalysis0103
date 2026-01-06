@@ -518,84 +518,101 @@ def calculate_global_metrics(df, month):
     return total_vol, total_margin, avg_margin
 
 
-def calculate_pvm_effects(curr_df, base_df, dimension_col, 
-                          global_vol_curr, global_vol_base, global_avg_margin_base):
+def calculate_atomic_pvm_effects(df, base_month, curr_month, global_vol_curr, global_vol_base, global_avg_margin_base):
     """
-    计算PVM效应
+    计算原子PVM效应（最细颗粒度）
     
-    特殊处理：
-    - 新品（基期销量为0）：费率效应为0，
-      结构效应 = Weight_Curr × (Margin_Curr - Global_Avg_Base)
-    - 停产品（当期销量为0）：费率效应为0，
-      结构效应 = (0 - Weight_Base) × (Margin_Base - Global_Avg_Base)
+    逻辑：
+    1. 识别数据中所有存在的维度 (Dim_A ... Dim_E)，组合成"原子"
+    2. 在原子层级计算 Mix 和 Rate 效应
+    3. 特殊处理新品和停产品
     """
-    # 合并当期和基期数据
+    # 1. 识别所有可用维度
+    all_dims = [c for c in ['Dim_A', 'Dim_B', 'Dim_C', 'Dim_D', 'Dim_E'] if c in df.columns]
+    
+    if not all_dims:
+        return pd.DataFrame()
+
+    # 2. 分别提取基期和当期数据并按所有维度聚合
+    base_df = df[df['Month'] == base_month].groupby(all_dims).agg({
+        'Sales Volume': 'sum', 'Total Margin': 'sum'
+    }).reset_index()
+    curr_df = df[df['Month'] == curr_month].groupby(all_dims).agg({
+        'Sales Volume': 'sum', 'Total Margin': 'sum'
+    }).reset_index()
+    
+    # 3. 合并数据
     merged = pd.merge(
-        curr_df[[dimension_col, 'Sales Volume', 'Unit Margin']].rename(
-            columns={'Sales Volume': 'Vol_Curr', 'Unit Margin': 'Margin_Unit_Curr'}
-        ),
-        base_df[[dimension_col, 'Sales Volume', 'Unit Margin']].rename(
-            columns={'Sales Volume': 'Vol_Base', 'Unit Margin': 'Margin_Unit_Base'}
-        ),
-        on=dimension_col,
-        how='outer'
+        base_df, curr_df, on=all_dims, how='outer', suffixes=('_Base', '_Curr')
     ).fillna(0)
     
-    # 计算权重
-    merged['Weight_Curr'] = merged['Vol_Curr'] / global_vol_curr if global_vol_curr > 0 else 0
-    merged['Weight_Base'] = merged['Vol_Base'] / global_vol_base if global_vol_base > 0 else 0
+    # 4. 计算原子层级的权重和单车边际
+    # 权重是相对于【全球】总销量的
+    merged['Weight_Base'] = merged['Sales Volume_Base'] / global_vol_base if global_vol_base > 0 else 0
+    merged['Weight_Curr'] = merged['Sales Volume_Curr'] / global_vol_curr if global_vol_curr > 0 else 0
     
-    # 识别新品（基期销量为0，当期销量>0）和停产品（当期销量为0，基期销量>0）
-    is_new_product = (merged['Vol_Base'] == 0) & (merged['Vol_Curr'] > 0)
-    is_discontinued = (merged['Vol_Curr'] == 0) & (merged['Vol_Base'] > 0)
-    is_existing = ~is_new_product & ~is_discontinued
+    merged['Unit_Margin_Base'] = merged.apply(lambda x: x['Total Margin_Base'] / x['Sales Volume_Base'] if x['Sales Volume_Base'] != 0 else 0, axis=1)
+    merged['Unit_Margin_Curr'] = merged.apply(lambda x: x['Total Margin_Curr'] / x['Sales Volume_Curr'] if x['Sales Volume_Curr'] != 0 else 0, axis=1)
     
-    # 创建用于计算的虚拟边际列
-    # 对新品：虚拟基期边际 = 当期边际（使结构效应用当期边际计算）
-    # 对停产品和现有产品：虚拟基期边际 = 实际基期边际
-    merged['Effective_Margin_Base'] = merged['Margin_Unit_Base'].copy()
-    merged.loc[is_new_product, 'Effective_Margin_Base'] = merged.loc[is_new_product, 'Margin_Unit_Curr']
+    # 5. PVM 计算逻辑
+    # 识别新品和停产品
+    is_new = (merged['Sales Volume_Base'] == 0) & (merged['Sales Volume_Curr'] > 0)
+    is_disc = (merged['Sales Volume_Curr'] == 0) & (merged['Sales Volume_Base'] > 0)
+    is_exist = ~is_new & ~is_disc
     
-    # 初始化效应列
-    merged['Relative_Mix_Effect'] = 0.0
+    merged['Mix_Effect'] = 0.0
     merged['Rate_Effect'] = 0.0
     
-    # === 现有产品：正常计算 ===
-    # 结构效应 = (Weight_Curr - Weight_Base) × (Margin_Unit_Base - Global_Avg_Base)
-    # 费率效应 = Weight_Curr × (Margin_Unit_Curr - Margin_Unit_Base)
-    merged.loc[is_existing, 'Relative_Mix_Effect'] = \
-        (merged.loc[is_existing, 'Weight_Curr'] - merged.loc[is_existing, 'Weight_Base']) * \
-        (merged.loc[is_existing, 'Margin_Unit_Base'] - global_avg_margin_base)
-    merged.loc[is_existing, 'Rate_Effect'] = \
-        merged.loc[is_existing, 'Weight_Curr'] * \
-        (merged.loc[is_existing, 'Margin_Unit_Curr'] - merged.loc[is_existing, 'Margin_Unit_Base'])
+    # === 现有产品 ===
+    # Mix: (Weight_Curr - Weight_Base) * (Unit_Margin_Base - Global_Avg_Margin_Base)
+    # Rate: Weight_Curr * (Unit_Margin_Curr - Unit_Margin_Base)
+    merged.loc[is_exist, 'Mix_Effect'] = (merged.loc[is_exist, 'Weight_Curr'] - merged.loc[is_exist, 'Weight_Base']) * (merged.loc[is_exist, 'Unit_Margin_Base'] - global_avg_margin_base)
+    merged.loc[is_exist, 'Rate_Effect'] = merged.loc[is_exist, 'Weight_Curr'] * (merged.loc[is_exist, 'Unit_Margin_Curr'] - merged.loc[is_exist, 'Unit_Margin_Base'])
     
-    # === 新品：费率效应=0，结构效应用当期边际 ===
-    # 结构效应 = Weight_Curr × (Margin_Curr - Global_Avg_Base)
-    # 费率效应 = 0（新品没有历史价格波动）
-    merged.loc[is_new_product, 'Relative_Mix_Effect'] = \
-        merged.loc[is_new_product, 'Weight_Curr'] * \
-        (merged.loc[is_new_product, 'Margin_Unit_Curr'] - global_avg_margin_base)
-    merged.loc[is_new_product, 'Rate_Effect'] = 0
+    # === 新品 (0 -> N) ===
+    # Mix: Weight_Curr * (Unit_Margin_Curr - Global_Avg_Margin_Base)
+    # Rate: 0
+    merged.loc[is_new, 'Mix_Effect'] = merged.loc[is_new, 'Weight_Curr'] * (merged.loc[is_new, 'Unit_Margin_Curr'] - global_avg_margin_base)
+    merged.loc[is_new, 'Rate_Effect'] = 0
     
-    # === 停产品：费率效应=0，结构效应用基期边际 ===
-    # 结构效应 = (0 - Weight_Base) × (Margin_Base - Global_Avg_Base)
-    # 费率效应 = 0（当期权重为0）
-    merged.loc[is_discontinued, 'Relative_Mix_Effect'] = \
-        (0 - merged.loc[is_discontinued, 'Weight_Base']) * \
-        (merged.loc[is_discontinued, 'Margin_Unit_Base'] - global_avg_margin_base)
-    merged.loc[is_discontinued, 'Rate_Effect'] = 0
-    
-    # 更新显示用的边际
-    # 新品的基期边际显示为全球基期平均边际（因为新品没有历史数据，用基期总体平均作为参考）
-    merged.loc[is_new_product, 'Margin_Unit_Base'] = global_avg_margin_base
-    # 停产品的当期边际显示为全球基期平均边际（因为停产品当期没有数据）
-    merged.loc[is_discontinued, 'Margin_Unit_Curr'] = global_avg_margin_base
-    
-    # 总贡献
-    merged['Total_Contribution'] = merged['Relative_Mix_Effect'] + merged['Rate_Effect']
+    # === 停产品 (N -> 0) ===
+    # Mix: (0 - Weight_Base) * (Unit_Margin_Base - Global_Avg_Margin_Base)
+    # Rate: 0
+    merged.loc[is_disc, 'Mix_Effect'] = (0 - merged.loc[is_disc, 'Weight_Base']) * (merged.loc[is_disc, 'Unit_Margin_Base'] - global_avg_margin_base)
+    merged.loc[is_disc, 'Rate_Effect'] = 0
     
     return merged
+
+
+def aggregate_pvm_effects(atomic_df, group_dim):
+    """
+    将原子层级的PVM效应汇总到指定维度
+    """
+    # 按指定维度聚合
+    agg = atomic_df.groupby(group_dim).agg({
+        'Sales Volume_Base': 'sum',
+        'Sales Volume_Curr': 'sum',
+        'Total Margin_Base': 'sum',
+        'Total Margin_Curr': 'sum',
+        'Mix_Effect': 'sum',
+        'Rate_Effect': 'sum'
+    }).reset_index()
+    
+    # 重命名以适配现有的显示逻辑
+    agg = agg.rename(columns={
+        'Sales Volume_Base': 'Vol_Base',
+        'Sales Volume_Curr': 'Vol_Curr',
+        'Mix_Effect': 'Relative_Mix_Effect',  # 保持列名兼容
+    })
+    
+    # 计算展示用的平均单车边际 (仅供参考，不参与PVM计算)
+    agg['Margin_Unit_Base'] = agg.apply(lambda x: x['Total Margin_Base'] / x['Vol_Base'] if x['Vol_Base'] != 0 else 0, axis=1)
+    agg['Margin_Unit_Curr'] = agg.apply(lambda x: x['Total Margin_Curr'] / x['Vol_Curr'] if x['Vol_Curr'] != 0 else 0, axis=1)
+    
+    # 总贡献
+    agg['Total_Contribution'] = agg['Relative_Mix_Effect'] + agg['Rate_Effect']
+    
+    return agg
 
 
 def prepare_display_dataframe(effects_df, dimension_col, total_vol_base, total_vol_curr, 
@@ -1063,113 +1080,57 @@ if df is not None:
         is_drilled = False
         drill_info_parts = []
         
-        for prev_level in range(level):
-            prev_dim = drill_order[prev_level]
-            prev_selection = st.session_state.selected_dims.get(prev_dim)
-            if prev_selection:
-                # 支持多选：使用isin()筛选
-                if isinstance(prev_selection, list):
-                    df_level = df_level[df_level[prev_dim].isin(prev_selection)]
-                    selection_text = ', '.join(prev_selection) if len(prev_selection) <= 3 else f"{len(prev_selection)}项"
-                else:
-                    df_level = df_level[df_level[prev_dim] == prev_selection]
-                    selection_text = prev_selection
-                is_drilled = True
-                drill_info_parts.append(f"{dim_names.get(prev_dim, prev_dim)}: **{selection_text}**")
-        
-        if is_drilled:
-            st.info(f"📍 已筛选 {' → '.join(drill_info_parts)}")
-        
-        # 聚合数据
-        base_data = aggregate_data(df_level, [dim], base_month)
-        curr_data = aggregate_data(df_level, [dim], curr_month)
-        
-        if not base_data.empty and not curr_data.empty:
-            # 计算筛选范围内的指标
-            level_vol_base = base_data['Sales Volume'].sum()
-            level_vol_curr = curr_data['Sales Volume'].sum()
-            level_margin_base = base_data['Total Margin'].sum() if 'Total Margin' in base_data.columns else (base_data['Sales Volume'] * base_data['Unit Margin']).sum()
-            level_margin_curr = curr_data['Total Margin'].sum() if 'Total Margin' in curr_data.columns else (curr_data['Sales Volume'] * curr_data['Unit Margin']).sum()
-            level_avg_margin_base = level_margin_base / level_vol_base if level_vol_base > 0 else 0
-            level_avg_margin_curr = level_margin_curr / level_vol_curr if level_vol_curr > 0 else 0
+        if not df_level.empty:
+            # 1. 计算当前视图范围（下钻上下文）的基准指标
+            level_base_df = df_level[df_level['Month'] == base_month]
+            level_curr_df = df_level[df_level['Month'] == curr_month]
             
-            # 计算PVM效应（使用筛选范围内的指标）
-            effects = calculate_pvm_effects(
-                curr_data, base_data, dim,
-                level_vol_curr if is_drilled else global_vol_curr,
-                level_vol_base if is_drilled else global_vol_base,
-                level_avg_margin_base if is_drilled else global_avg_margin_base
+            level_vol_base = level_base_df['Sales Volume'].sum()
+            level_vol_curr = level_curr_df['Sales Volume'].sum()
+            
+            level_total_margin_base = level_base_df['Total Margin'].sum()
+            level_total_margin_curr = level_curr_df['Total Margin'].sum()
+            
+            level_avg_margin_base = level_total_margin_base / level_vol_base if level_vol_base > 0 else 0
+            level_avg_margin_curr = level_total_margin_curr / level_vol_curr if level_vol_curr > 0 else 0
+            
+            # 2. 计算原子PVM效应 (基于当前视图范围)
+            # 所有的Mix/Rate计算都基于最细颗粒度，但权重是相对于当前视图总量的
+            level_atomic_effects = calculate_atomic_pvm_effects(
+                df_level, base_month, curr_month,
+                level_vol_curr, level_vol_base, level_avg_margin_base
             )
             
-            # 创建瀑布图
-            fig = create_waterfall_chart(
-                effects, dim,
-                f'{dim_name}贡献分解 ({base_month} → {curr_month})',
-                level_avg_margin_base if is_drilled else global_avg_margin_base,
-                level_avg_margin_curr if is_drilled else global_avg_margin_curr,
-                color_schemes[level % len(color_schemes)]
-            )
-            st.plotly_chart(fig, use_container_width=True)
-            
-            # 显示明细数据
-            with st.expander(f"📋 {dim_name}明细数据"):
-                display_df = prepare_display_dataframe(
+            if not level_atomic_effects.empty:
+                # 3. 聚合到当前显示维度
+                effects = aggregate_pvm_effects(level_atomic_effects, dim)
+                
+                # 4. 创建瀑布图
+                fig = create_waterfall_chart(
                     effects, dim,
-                    level_vol_base if is_drilled else global_vol_base,
-                    level_vol_curr if is_drilled else global_vol_curr,
-                    level_margin_base if is_drilled else global_margin_base,
-                    level_margin_curr if is_drilled else global_margin_curr
+                    f'{dim_name}贡献分解 (自底向上计算)',
+                    level_avg_margin_base,
+                    level_avg_margin_curr,
+                    color_schemes[level % len(color_schemes)]
                 )
+                st.plotly_chart(fig, use_container_width=True)
                 
-                display_cols = [dim, 'Vol_Base', 'Weight_Base_Pct', 'Vol_Curr', 'Weight_Curr_Pct',
-                               'Margin_Unit_Base', 'Margin_Unit_Curr',
-                               'Relative_Mix_Effect', 'Rate_Effect', 'Total_Contribution']
-                st.dataframe(
-                    display_df[display_cols].rename(columns={
-                        dim: dim_name,
-                        'Vol_Base': '基期销量',
-                        'Weight_Base_Pct': '基期占比%',
-                        'Vol_Curr': '当期销量',
-                        'Weight_Curr_Pct': '当期占比%',
-                        'Margin_Unit_Base': '基期单车边际',
-                        'Margin_Unit_Curr': '当期单车边际',
-                        'Relative_Mix_Effect': '结构效应',
-                        'Rate_Effect': '费率效应',
-                        'Total_Contribution': '总贡献'
-                    }).style.format({
-                        '基期销量': '{:,.0f}',
-                        '基期占比%': '{:.1f}%',
-                        '当期销量': '{:,.0f}',
-                        '当期占比%': '{:.1f}%',
-                        '基期单车边际': '¥{:,.0f}',
-                        '当期单车边际': '¥{:,.0f}',
-                        '结构效应': '{:+,.0f}',
-                        '费率效应': '{:+,.0f}',
-                        '总贡献': '{:+,.0f}'
-                    }),
-                    use_container_width=True
-                )
-                
-                # 如果是下钻状态，额外显示对全球整体单车边际的贡献
-                if is_drilled:
-                    st.markdown("---")
-                    st.markdown("##### 🌐 对全球整体单车边际的贡献")
-                    
-                    # 基于全球销量重新计算PVM效应
-                    global_effects = calculate_pvm_effects(
-                        curr_data, base_data, dim,
-                        global_vol_curr, global_vol_base, global_avg_margin_base
+                # 5. 显示明细数据
+                with st.expander(f"📋 {dim_name}明细数据"):
+                    display_df = prepare_display_dataframe(
+                        effects, dim,
+                        level_vol_base,
+                        level_vol_curr,
+                        level_total_margin_base,
+                        level_total_margin_curr
                     )
                     
-                    global_display_df = prepare_display_dataframe(
-                        global_effects, dim,
-                        global_vol_base, global_vol_curr,
-                        global_margin_base, global_margin_curr,
-                        is_global=True
-                    )
-                    
+                    display_cols = [dim, 'Vol_Base', 'Weight_Base_Pct', 'Vol_Curr', 'Weight_Curr_Pct',
+                                   'Margin_Unit_Base', 'Margin_Unit_Curr',
+                                   'Relative_Mix_Effect', 'Rate_Effect', 'Total_Contribution']
+                                   
                     st.dataframe(
-                        global_display_df[display_cols].rename(columns={
+                        display_df[display_cols].rename(columns={
                             dim: dim_name,
                             'Vol_Base': '基期销量',
                             'Weight_Base_Pct': '基期占比%',
@@ -1177,9 +1138,9 @@ if df is not None:
                             'Weight_Curr_Pct': '当期占比%',
                             'Margin_Unit_Base': '基期单车边际',
                             'Margin_Unit_Curr': '当期单车边际',
-                            'Relative_Mix_Effect': '结构效应（全球）',
-                            'Rate_Effect': '费率效应（全球）',
-                            'Total_Contribution': '对全球单车边际贡献'
+                            'Relative_Mix_Effect': '结构效应',
+                            'Rate_Effect': '费率效应',
+                            'Total_Contribution': '总贡献'
                         }).style.format({
                             '基期销量': '{:,.0f}',
                             '基期占比%': '{:.1f}%',
@@ -1187,12 +1148,58 @@ if df is not None:
                             '当期占比%': '{:.1f}%',
                             '基期单车边际': '¥{:,.0f}',
                             '当期单车边际': '¥{:,.0f}',
-                            '结构效应（全球）': '{:+,.0f}',
-                            '费率效应（全球）': '{:+,.0f}',
-                            '对全球单车边际贡献': '{:+,.0f}'
+                            '结构效应': '{:+,.0f}',
+                            '费率效应': '{:+,.0f}',
+                            '总贡献': '{:+,.0f}'
                         }),
                         use_container_width=True
                     )
+                    
+                    # 如果是下钻状态，显示对全球整体的影响 (即不重新计算权重，直接使用全球权重的原子效应)
+                    if is_drilled:
+                        st.markdown("---")
+                        st.markdown("##### 🌐 对全球整体单车边际的贡献")
+                        
+                        # 重新计算基于全球视角的原子效应 (仅针对筛选出的数据)
+                        global_context_atomic = calculate_atomic_pvm_effects(
+                            df_level, base_month, curr_month,
+                            global_vol_curr, global_vol_base, global_avg_margin_base
+                        )
+                        
+                        if not global_context_atomic.empty:
+                            global_effects = aggregate_pvm_effects(global_context_atomic, dim)
+                            
+                            global_display_df = prepare_display_dataframe(
+                                global_effects, dim,
+                                global_vol_base, global_vol_curr,
+                                is_global=True
+                            )
+                            
+                            st.dataframe(
+                                global_display_df[display_cols].rename(columns={
+                                    dim: dim_name,
+                                    'Vol_Base': '基期销量',
+                                    'Weight_Base_Pct': '基期占比%',
+                                    'Vol_Curr': '当期销量',
+                                    'Weight_Curr_Pct': '当期占比%',
+                                    'Margin_Unit_Base': '基期单车边际',
+                                    'Margin_Unit_Curr': '当期单车边际',
+                                    'Relative_Mix_Effect': '结构效应（全球）',
+                                    'Rate_Effect': '费率效应（全球）',
+                                    'Total_Contribution': '对全球单车边际贡献'
+                                }).style.format({
+                                    '基期销量': '{:,.0f}',
+                                    '基期占比%': '{:.1f}%',
+                                    '当期销量': '{:,.0f}',
+                                    '当期占比%': '{:.1f}%',
+                                    '基期单车边际': '¥{:,.0f}',
+                                    '当期单车边际': '¥{:,.0f}',
+                                    '结构效应（全球）': '{:+,.0f}',
+                                    '费率效应（全球）': '{:+,.0f}',
+                                    '对全球单车边际贡献': '{:+,.0f}'
+                                }),
+                                use_container_width=True
+                            )
         
         st.markdown("---")
 
@@ -1213,11 +1220,14 @@ else:
         > - Dim_D 和 Dim_E 为可选列，如果数据中不包含则不会显示
         > - 上传数据后可在侧边栏"自定义维度名称"中修改各维度的显示名称
         
-        ### 计算公式
+        ### 计算逻辑 (自底向上)
         
-        - **权重**: Weight = Volume / Global_Volume
-        - **结构效应**: (Weight_Curr - Weight_Base) × (Margin_Base - Global_Avg_Margin_Base)
-        - **费率效应**: Weight_Curr × (Margin_Curr - Margin_Base)
+        1. **原子化计算**: 首先在最细颗粒度（所有维度的组合）上计算每个细分项的 PVM 效应。
+        2. **结构效应 (Mix)**: 细分项权重变化带来的影响。
+        3. **费率效应 (Rate)**: 细分项单车边际变化带来的影响。
+        4. **维度聚合**: 将细分项的效应汇总到当前查看的维度（如大区）。
+        
+        > 💡 这种方法能确保大区内部的产品结构变化正确归因为结构效应，而不是费率效应。
         """)
 
 # ==================== 页脚 ====================
@@ -1286,7 +1296,7 @@ with st.expander("📐 PVM效应计算假设说明", expanded=False):
     </table>
     
     <p style="color: #94a3b8; font-size: 0.85rem; margin-top: 1rem;">
-        💡 <b>说明：</b>0→N产品没有历史价格波动，全部影响归于结构效应（反映其是否比基期平均水平更赚钱），费率效应为0；
+        💡 <b>说明：</b>所有计算均在最细颗粒度进行，展示的数值为细分项汇总结果。这样可以避免高层级维度掩盖实际的结构变化。
     </p>
     """, unsafe_allow_html=True)
 
