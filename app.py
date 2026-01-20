@@ -16,152 +16,168 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ==================== 投行风格CSS ====================
+# ==================== Anthropic/Claude 品牌风格 CSS ====================
 st.markdown("""
 <style>
-    /* 导入Google字体 */
-    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700;900&display=swap');
+    /* 导入 Google 字体 - Anthropic 风格 */
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Lora:wght@400;500;600&display=swap');
     
-    /* 全局背景 - 深色投行风格 */
+    /* Anthropic 品牌色彩变量 */
+    :root {
+        --bg-primary: #faf9f5;
+        --bg-card: #ffffff;
+        --text-primary: #141413;
+        --text-secondary: #b0aea5;
+        --accent-orange: #d97757;
+        --accent-blue: #6a9bcc;
+        --accent-green: #788c5d;
+        --border-light: #e8e6dc;
+        --shadow-soft: 0 4px 20px rgba(20, 20, 19, 0.06);
+        --shadow-hover: 0 8px 30px rgba(217, 119, 87, 0.12);
+    }
+    
+    /* 全局背景 - 温暖奶油色 */
     .stApp {
-        background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #16213e 100%);
-        font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+        background: var(--bg-primary);
+        font-family: 'Lora', Georgia, serif;
     }
     
     /* 主标题容器 */
     .title-container {
         text-align: center;
-        padding: 2.5rem 0 1.5rem 0;
+        padding: 1.5rem 0 1.5rem 0;
         position: relative;
         overflow: hidden;
     }
     
-    /* 装饰线条 - 动态扫光效果 */
-    .title-container::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 400px;
-        height: 2px;
-        background: linear-gradient(90deg, transparent 0%, #f5af19 20%, #ffd700 50%, #f5af19 80%, transparent 100%);
-        animation: lineGlow 4s ease-in-out infinite;
-    }
-    
+    /* 底部装饰线 */
     .title-container::after {
         content: '';
         position: absolute;
         bottom: 0;
         left: 50%;
         transform: translateX(-50%);
-        width: 500px;
+        width: 400px;
         height: 1px;
-        background: linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.5), transparent);
-        animation: lineGlow 4s ease-in-out infinite reverse;
+        background: linear-gradient(90deg, transparent, var(--border-light), transparent);
     }
     
-    @keyframes lineGlow {
-        0%, 100% { opacity: 0.3; width: 200px; }
-        50% { opacity: 1; width: 500px; }
-    }
-    
-    /* 主标题样式 - 极致精美 */
+    /* 主标题样式 - Anthropic 渐变 */
     .main-header {
-        font-size: 4rem;
-        font-weight: 900;
-        background: linear-gradient(135deg, #ffd700 0%, #ffcc00 20%, #ff9500 40%, #ffcc00 60%, #ffd700 80%, #ffe066 100%);
-        background-size: 300% auto;
+        font-size: 3.2rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, var(--accent-orange) 0%, var(--accent-blue) 50%, var(--accent-green) 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
         text-align: center;
         padding: 0.5rem 0;
-        letter-spacing: 0.15em;
-        font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
-        animation: shimmer 4s ease-in-out infinite, float 6s ease-in-out infinite;
-        position: relative;
-        display: inline-block;
+        letter-spacing: 0.08em;
+        font-family: 'Poppins', Arial, sans-serif;
     }
     
-    @keyframes shimmer {
-        0% { background-position: 0% center; }
-        50% { background-position: 100% center; }
-        100% { background-position: 0% center; }
-    }
-    
-    @keyframes float {
-        0%, 100% { transform: translateY(0); }
-        50% { transform: translateY(-5px); }
-    }
-    
-    /* 标题光晕效果 - 更强烈 */
+    /* 标题光晕效果 */
     .title-glow {
         position: absolute;
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        width: 700px;
-        height: 150px;
-        background: radial-gradient(ellipse, rgba(255, 200, 0, 0.25) 0%, rgba(255, 150, 0, 0.1) 40%, transparent 70%);
+        width: 500px;
+        height: 120px;
+        background: radial-gradient(ellipse, rgba(217, 119, 87, 0.08) 0%, transparent 70%);
         pointer-events: none;
         z-index: -1;
-        animation: pulse 3s ease-in-out infinite;
     }
     
-    @keyframes pulse {
-        0%, 100% { opacity: 0.6; transform: translate(-50%, -50%) scale(1); }
-        50% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
-    }
-    
-    /* 副标题 - 更精致 */
+    /* 副标题 */
     .sub-header {
         text-align: center;
-        background: linear-gradient(90deg, rgba(148, 163, 184, 0.6), rgba(255, 215, 0, 0.8), rgba(148, 163, 184, 0.6));
-        background-size: 200% auto;
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        font-size: 1rem;
-        margin-top: 0.8rem;
-        margin-bottom: 2.5rem;
-        letter-spacing: 0.5em;
-        font-weight: 600;
-        text-transform: uppercase;
-        animation: shimmer 5s ease-in-out infinite;
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        margin-top: 0.5rem;
+        margin-bottom: 1rem;
+        letter-spacing: 0.25em;
+        font-weight: 400;
+        font-family: 'Poppins', Arial, sans-serif;
     }
     
-    /* 装饰图标 - 更炫酷 */
-    .header-icon {
-        font-size: 3rem;
-        display: block;
-        margin-bottom: 0.8rem;
-        filter: drop-shadow(0 0 30px rgba(255, 215, 0, 0.8));
-        animation: iconFloat 3s ease-in-out infinite, iconGlow 2s ease-in-out infinite;
+    /* 标题装饰区 */
+    .title-decoration {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        margin-bottom: 1rem;
     }
     
-    @keyframes iconFloat {
-        0%, 100% { transform: translateY(0) rotate(0deg); }
-        25% { transform: translateY(-8px) rotate(-5deg); }
-        75% { transform: translateY(-8px) rotate(5deg); }
+    .deco-line {
+        width: 60px;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, var(--accent-orange));
+        border-radius: 1px;
     }
     
-    @keyframes iconGlow {
-        0%, 100% { filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.6)); }
-        50% { filter: drop-shadow(0 0 40px rgba(255, 215, 0, 1)); }
+    .deco-line.right {
+        background: linear-gradient(90deg, var(--accent-orange), transparent);
+    }
+    
+    .deco-icon {
+        font-size: 1.2rem;
+        color: var(--accent-orange);
+        animation: rotate 8s linear infinite;
+    }
+    
+    @keyframes rotate {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+    
+    /* 标题标签 */
+    .title-tags {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 0.5rem;
+        margin-top: 1.2rem;
+        flex-wrap: wrap;
+    }
+    
+    .tag {
+        display: inline-block;
+        padding: 0.35rem 0.9rem;
+        background: linear-gradient(135deg, rgba(217, 119, 87, 0.08), rgba(106, 155, 204, 0.08));
+        border: 1px solid var(--border-light);
+        border-radius: 20px;
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        font-family: 'Poppins', Arial, sans-serif;
+        font-weight: 500;
+        letter-spacing: 0.05em;
+        transition: all 0.3s ease;
+    }
+    
+    .tag:hover {
+        border-color: var(--accent-orange);
+        color: var(--accent-orange);
+        background: rgba(217, 119, 87, 0.05);
+    }
+    
+    .tag-dot {
+        color: var(--border-light);
+        font-size: 0.5rem;
     }
     
     /* 侧边栏样式 */
     [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #0f0f1a 0%, #1a1a2e 100%);
-        border-right: 1px solid rgba(255, 215, 0, 0.15);
+        background: var(--bg-card);
+        border-right: 1px solid var(--border-light);
     }
     
-    /* 确保侧边栏展开按钮可见 */
+    /* 侧边栏展开按钮 */
     [data-testid="collapsedControl"] {
         display: flex !important;
         visibility: visible !important;
-        color: #f5af19 !important;
+        color: var(--accent-orange) !important;
     }
     
     button[kind="headerNoPadding"] {
@@ -170,153 +186,157 @@ st.markdown("""
     }
     
     [data-testid="stSidebar"] .stMarkdown h2 {
-        color: #f5af19;
+        color: var(--text-primary);
         font-weight: 600;
-        letter-spacing: 0.1em;
-        border-left: 3px solid #f5af19;
+        letter-spacing: 0.05em;
+        border-left: 3px solid var(--accent-orange);
         padding-left: 0.8rem;
         margin-left: -0.5rem;
+        font-family: 'Poppins', Arial, sans-serif;
     }
     
-    /* 指标卡片 - 高级玻璃态 */
+    /* 指标卡片 - 白色卡片风格 */
     [data-testid="stMetric"] {
-        background: linear-gradient(135deg, rgba(26, 26, 46, 0.95) 0%, rgba(22, 33, 62, 0.95) 100%);
-        border: 1px solid rgba(255, 215, 0, 0.25);
-        border-radius: 20px;
-        padding: 1.8rem;
-        box-shadow: 
-            0 10px 40px rgba(0, 0, 0, 0.5), 
-            inset 0 1px 0 rgba(255, 255, 255, 0.1),
-            0 0 30px rgba(255, 215, 0, 0.05);
-        backdrop-filter: blur(15px);
-        transition: all 0.3s ease;
+        background: var(--bg-card);
+        border: 1px solid var(--border-light);
+        border-radius: 16px;
+        padding: 1.5rem;
+        box-shadow: var(--shadow-soft);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
     
     [data-testid="stMetric"]:hover {
-        transform: translateY(-3px);
-        box-shadow: 
-            0 15px 50px rgba(0, 0, 0, 0.6), 
-            inset 0 1px 0 rgba(255, 255, 255, 0.15),
-            0 0 40px rgba(255, 215, 0, 0.1);
-        border-color: rgba(255, 215, 0, 0.4);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-hover);
+        border-color: rgba(217, 119, 87, 0.3);
     }
     
     [data-testid="stMetric"] label {
-        color: #94a3b8 !important;
+        color: var(--text-secondary) !important;
         font-size: 0.8rem !important;
-        letter-spacing: 0.08em;
+        letter-spacing: 0.05em;
         text-transform: uppercase;
+        font-family: 'Poppins', Arial, sans-serif;
     }
     
     [data-testid="stMetric"] [data-testid="stMetricValue"] {
-        color: #ffd700 !important;
-        font-size: 2rem !important;
-        font-weight: 700 !important;
-        text-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+        color: var(--text-primary) !important;
+        font-size: 1.8rem !important;
+        font-weight: 600 !important;
+        font-family: 'Poppins', Arial, sans-serif;
     }
     
     [data-testid="stMetric"] [data-testid="stMetricDelta"] {
-        font-size: 0.95rem !important;
+        font-size: 0.9rem !important;
     }
     
     /* 图表容器 */
     .chart-section {
-        background: linear-gradient(135deg, rgba(15, 15, 26, 0.95) 0%, rgba(26, 26, 46, 0.95) 100%);
-        border: 1px solid rgba(255, 215, 0, 0.15);
-        border-radius: 24px;
-        padding: 2rem;
+        background: var(--bg-card);
+        border: 1px solid var(--border-light);
+        border-radius: 20px;
+        padding: 1.5rem;
         margin: 1.5rem 0;
-        box-shadow: 0 15px 50px rgba(0, 0, 0, 0.5);
+        box-shadow: var(--shadow-soft);
     }
     
-    /* 子标题样式增强 */
+    /* 子标题样式 */
     h3 {
-        color: #e2e8f0 !important;
+        color: var(--text-primary) !important;
         font-weight: 600 !important;
-        letter-spacing: 0.08em;
-        padding-bottom: 0.8rem;
-        border-bottom: 2px solid transparent;
-        border-image: linear-gradient(90deg, #f5af19, transparent) 1;
+        letter-spacing: 0.03em;
+        padding-bottom: 0.6rem;
+        border-bottom: 2px solid var(--border-light);
         margin-bottom: 1rem !important;
+        font-family: 'Poppins', Arial, sans-serif;
     }
     
     /* 信息提示框 */
     .stAlert {
-        background: rgba(26, 26, 46, 0.9) !important;
-        border: 1px solid rgba(255, 215, 0, 0.2) !important;
-        border-radius: 14px !important;
-        backdrop-filter: blur(10px);
+        background: var(--bg-card) !important;
+        border: 1px solid var(--border-light) !important;
+        border-radius: 12px !important;
+        border-left: 4px solid var(--accent-blue) !important;
     }
     
     /* 展开器 */
     .streamlit-expanderHeader {
-        background: linear-gradient(135deg, rgba(26, 26, 46, 0.9) 0%, rgba(22, 33, 62, 0.9) 100%) !important;
-        border: 1px solid rgba(255, 215, 0, 0.15) !important;
-        border-radius: 12px !important;
-        color: #e2e8f0 !important;
+        background: var(--bg-primary) !important;
+        border: 1px solid var(--border-light) !important;
+        border-radius: 10px !important;
+        color: var(--text-primary) !important;
+        font-family: 'Poppins', Arial, sans-serif;
     }
     
     /* 数据表格 */
     .stDataFrame {
-        background: rgba(15, 15, 26, 0.95) !important;
-        border-radius: 12px !important;
-        border: 1px solid rgba(255, 215, 0, 0.1) !important;
+        background: var(--bg-card) !important;
+        border-radius: 10px !important;
+        border: 1px solid var(--border-light) !important;
     }
     
     /* 分割线 */
     hr {
         border: none !important;
         height: 1px !important;
-        background: linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.3), transparent) !important;
+        background: linear-gradient(90deg, transparent, var(--border-light), transparent) !important;
         margin: 2rem 0 !important;
     }
     
     /* 按钮样式 */
     .stButton > button {
-        background: linear-gradient(135deg, #f5af19 0%, #f12711 100%);
+        background: var(--accent-orange);
         color: white;
         border: none;
-        border-radius: 12px;
+        border-radius: 9999px;
         font-weight: 600;
-        letter-spacing: 0.08em;
-        padding: 0.6rem 1.5rem;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(245, 175, 25, 0.3);
+        letter-spacing: 0.05em;
+        padding: 0.6rem 1.8rem;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 2px 8px rgba(217, 119, 87, 0.25);
+        font-family: 'Poppins', Arial, sans-serif;
     }
     
     .stButton > button:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 8px 25px rgba(245, 175, 25, 0.5);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(217, 119, 87, 0.35);
+        background: #c56646;
     }
     
     /* 下拉框 */
     .stSelectbox > div > div {
-        background: rgba(26, 26, 46, 0.95) !important;
-        border: 1px solid rgba(255, 215, 0, 0.2) !important;
-        border-radius: 12px !important;
-        color: #e2e8f0 !important;
+        background: var(--bg-card) !important;
+        border: 1px solid var(--border-light) !important;
+        border-radius: 10px !important;
+        color: var(--text-primary) !important;
     }
     
     /* Radio按钮 */
     .stRadio > div {
-        background: rgba(26, 26, 46, 0.6);
-        border-radius: 12px;
+        background: var(--bg-primary);
+        border-radius: 10px;
         padding: 0.8rem;
-        border: 1px solid rgba(255, 215, 0, 0.1);
+        border: 1px solid var(--border-light);
     }
     
     /* 成功提示 */
     .stSuccess {
-        background: rgba(16, 185, 129, 0.15) !important;
-        border: 1px solid rgba(16, 185, 129, 0.4) !important;
+        background: rgba(120, 140, 93, 0.1) !important;
+        border: 1px solid rgba(120, 140, 93, 0.3) !important;
+        border-left: 4px solid var(--accent-green) !important;
     }
     
     /* 文件上传器 */
     .stFileUploader {
-        background: rgba(26, 26, 46, 0.6);
-        border: 2px dashed rgba(255, 215, 0, 0.25);
-        border-radius: 16px;
+        background: var(--bg-card);
+        border: 2px dashed var(--border-light);
+        border-radius: 14px;
         padding: 1.2rem;
+        transition: all 0.3s ease;
+    }
+    
+    .stFileUploader:hover {
+        border-color: var(--accent-orange);
     }
     
     /* 隐藏Streamlit默认元素 */
@@ -331,15 +351,26 @@ st.markdown("""
     }
     
     ::-webkit-scrollbar-track {
-        background: rgba(26, 26, 46, 0.5);
+        background: var(--bg-primary);
     }
     
     ::-webkit-scrollbar-thumb {
-        background: linear-gradient(180deg, #f5af19, #f12711);
+        background: var(--border-light);
         border-radius: 4px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+        background: var(--text-secondary);
+    }
+    
+    /* 选中文本颜色 */
+    ::selection {
+        background: rgba(217, 119, 87, 0.2);
+        color: var(--text-primary);
     }
 </style>
 """, unsafe_allow_html=True)
+
 
 # ==================== Session State 初始化 ====================
 # 下钻顺序配置（支持最多5个维度，可选择"无"跳过）
@@ -381,6 +412,44 @@ DIM_ICONS = {
     'Dim_D': '🏷️',
     'Dim_E': '🏢'
 }
+
+
+# ==================== 示例数据生成 ====================
+def generate_demo_data():
+    """生成示例数据用于演示 PVM 归因分析"""
+    data = [
+        # 2025-01 基期数据
+        # 亚太区
+        {'Month': '2025-01', 'Dim_A': '亚太区', 'Dim_B': '中国', 'Dim_C': 'SUV-旗舰', 'Sales Volume': 5000, 'Total Margin': 15000000},
+        {'Month': '2025-01', 'Dim_A': '亚太区', 'Dim_B': '中国', 'Dim_C': 'Sedan-经典', 'Sales Volume': 3500, 'Total Margin': 7000000},
+        {'Month': '2025-01', 'Dim_A': '亚太区', 'Dim_B': '日本', 'Dim_C': 'SUV-旗舰', 'Sales Volume': 2000, 'Total Margin': 6400000},
+        {'Month': '2025-01', 'Dim_A': '亚太区', 'Dim_B': '日本', 'Dim_C': 'EV-新能源', 'Sales Volume': 1500, 'Total Margin': 5250000},
+        # 欧洲区
+        {'Month': '2025-01', 'Dim_A': '欧洲区', 'Dim_B': '德国', 'Dim_C': 'SUV-旗舰', 'Sales Volume': 3000, 'Total Margin': 10500000},
+        {'Month': '2025-01', 'Dim_A': '欧洲区', 'Dim_B': '德国', 'Dim_C': 'Sedan-经典', 'Sales Volume': 2500, 'Total Margin': 5500000},
+        {'Month': '2025-01', 'Dim_A': '欧洲区', 'Dim_B': '法国', 'Dim_C': 'EV-新能源', 'Sales Volume': 1800, 'Total Margin': 5940000},
+        # 美洲区
+        {'Month': '2025-01', 'Dim_A': '美洲区', 'Dim_B': '美国', 'Dim_C': 'SUV-旗舰', 'Sales Volume': 4000, 'Total Margin': 14000000},
+        {'Month': '2025-01', 'Dim_A': '美洲区', 'Dim_B': '美国', 'Dim_C': 'Pickup-皮卡', 'Sales Volume': 2800, 'Total Margin': 8400000},
+        {'Month': '2025-01', 'Dim_A': '美洲区', 'Dim_B': '巴西', 'Dim_C': 'Sedan-经典', 'Sales Volume': 1200, 'Total Margin': 1800000},
+        
+        # 2025-02 当期数据 (包含结构变化和费率变化)
+        # 亚太区 - 中国SUV增长，单车边际提升; 日本EV占比提升
+        {'Month': '2025-02', 'Dim_A': '亚太区', 'Dim_B': '中国', 'Dim_C': 'SUV-旗舰', 'Sales Volume': 6200, 'Total Margin': 19840000},  # 量+24%, 单车边际+6.7%
+        {'Month': '2025-02', 'Dim_A': '亚太区', 'Dim_B': '中国', 'Dim_C': 'Sedan-经典', 'Sales Volume': 3200, 'Total Margin': 6080000},  # 量-8.6%, 单车边际-5%
+        {'Month': '2025-02', 'Dim_A': '亚太区', 'Dim_B': '日本', 'Dim_C': 'SUV-旗舰', 'Sales Volume': 1800, 'Total Margin': 5580000},  # 量-10%, 单车边际-3%
+        {'Month': '2025-02', 'Dim_A': '亚太区', 'Dim_B': '日本', 'Dim_C': 'EV-新能源', 'Sales Volume': 2200, 'Total Margin': 8140000},  # 量+47%, 单车边际+5.7%
+        # 欧洲区 - 德国整体下滑，法国EV大增
+        {'Month': '2025-02', 'Dim_A': '欧洲区', 'Dim_B': '德国', 'Dim_C': 'SUV-旗舰', 'Sales Volume': 2600, 'Total Margin': 8580000},  # 量-13%, 单车边际-5.7%
+        {'Month': '2025-02', 'Dim_A': '欧洲区', 'Dim_B': '德国', 'Dim_C': 'Sedan-经典', 'Sales Volume': 2200, 'Total Margin': 4620000},  # 量-12%, 单车边际-4.5%
+        {'Month': '2025-02', 'Dim_A': '欧洲区', 'Dim_B': '法国', 'Dim_C': 'EV-新能源', 'Sales Volume': 2800, 'Total Margin': 10080000},  # 量+56%, 单车边际+9%
+        # 美洲区 - 美国皮卡需求旺，巴西新增SUV
+        {'Month': '2025-02', 'Dim_A': '美洲区', 'Dim_B': '美国', 'Dim_C': 'SUV-旗舰', 'Sales Volume': 4200, 'Total Margin': 14700000},  # 量+5%
+        {'Month': '2025-02', 'Dim_A': '美洲区', 'Dim_B': '美国', 'Dim_C': 'Pickup-皮卡', 'Sales Volume': 3500, 'Total Margin': 11200000},  # 量+25%, 单车边际+6.7%
+        {'Month': '2025-02', 'Dim_A': '美洲区', 'Dim_B': '巴西', 'Dim_C': 'Sedan-经典', 'Sales Volume': 1000, 'Total Margin': 1400000},  # 量-17%, 单车边际-6.7%
+        {'Month': '2025-02', 'Dim_A': '美洲区', 'Dim_B': '巴西', 'Dim_C': 'SUV-旗舰', 'Sales Volume': 800, 'Total Margin': 2000000},  # 新品
+    ]
+    return pd.DataFrame(data)
 
 
 # ==================== 数据处理函数 ====================
@@ -688,28 +757,28 @@ def create_waterfall_chart(data, dimension_col, title, base_margin, curr_margin,
         values = [base_margin] + sorted_data['Total_Contribution'].tolist() + [0]
         measures = ['absolute'] + ['relative'] * len(sorted_data) + ['total']
     
-    # 投行风格颜色方案
+    # Anthropic 品牌颜色方案
     color_schemes = {
-        'gold': {
-            'increasing': '#10b981',
-            'decreasing': '#ef4444',
-            'total': '#ffd700',
-            'base': '#3b82f6'
+        'claude': {
+            'increasing': '#788c5d',   # Anthropic Green
+            'decreasing': '#d97757',   # Anthropic Orange  
+            'total': '#6a9bcc',        # Anthropic Blue
+            'base': '#b0aea5'          # Anthropic Gray
         },
-        'emerald': {
-            'increasing': '#34d399',
-            'decreasing': '#f87171',
-            'total': '#fbbf24',
-            'base': '#60a5fa'
+        'warm': {
+            'increasing': '#788c5d',
+            'decreasing': '#c56646',
+            'total': '#5a89b8',
+            'base': '#9a988f'
         },
-        'royal': {
-            'increasing': '#22d3d3',
-            'decreasing': '#fb7185',
-            'total': '#a78bfa',
-            'base': '#38bdf8'
+        'soft': {
+            'increasing': '#8fa370',
+            'decreasing': '#e08060',
+            'total': '#7aaad4',
+            'base': '#c0beb5'
         }
     }
-    colors = color_schemes.get(color_scheme, color_schemes['gold'])
+    colors = color_schemes.get(color_scheme, color_schemes['claude'])
     
     # 计算Y轴范围 - 灵活调整起始位置
     min_margin = min(base_margin, curr_margin)
@@ -763,53 +832,53 @@ def create_waterfall_chart(data, dimension_col, title, base_margin, curr_margin,
         y=values,
         textposition="outside",
         text=text_labels,
-        textfont=dict(size=13, color='#e2e8f0', family='Microsoft YaHei'),
+        textfont=dict(size=13, color='#141413', family='Poppins'),
         increasing={"marker": {"color": colors['increasing'], "line": {"color": colors['increasing'], "width": 1}}},
         decreasing={"marker": {"color": colors['decreasing'], "line": {"color": colors['decreasing'], "width": 1}}},
         totals={"marker": {"color": colors['total'], "line": {"color": colors['total'], "width": 2}}},
-        connector={"line": {"color": "rgba(255, 215, 0, 0.2)", "width": 1.5, "dash": "dot"}},
+        connector={"line": {"color": "rgba(176, 174, 165, 0.3)", "width": 1.5, "dash": "dot"}},
     ))
     
     fig.update_layout(
         title={
             'text': f'<b>{title}</b>',
-            'font': {'size': 18, 'color': '#ffd700', 'family': 'Microsoft YaHei'},
+            'font': {'size': 18, 'color': '#141413', 'family': 'Poppins'},
             'x': 0.5,
             'xanchor': 'center'
         },
         showlegend=False,
         height=520,
         margin=dict(l=80, r=80, t=120, b=100),
-        plot_bgcolor='rgba(0,0,0,0)',
-        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(250, 249, 245, 0)',
+        paper_bgcolor='rgba(250, 249, 245, 0)',
         xaxis=dict(
             tickangle=-25,
-            tickfont=dict(size=12, color='#94a3b8', family='Microsoft YaHei'),
-            gridcolor='rgba(255, 215, 0, 0.05)',
-            linecolor='rgba(255, 215, 0, 0.2)',
+            tickfont=dict(size=12, color='#b0aea5', family='Poppins'),
+            gridcolor='rgba(232, 230, 220, 0.5)',
+            linecolor='#e8e6dc',
             showline=True
         ),
         yaxis=dict(
-            title=dict(text='单车边际 (¥)', font=dict(size=13, color='#94a3b8')),
-            gridcolor='rgba(255, 215, 0, 0.08)',
-            tickfont=dict(size=11, color='#94a3b8'),
+            title=dict(text='单车边际 (¥)', font=dict(size=13, color='#b0aea5')),
+            gridcolor='rgba(232, 230, 220, 0.5)',
+            tickfont=dict(size=11, color='#b0aea5'),
             tickformat=',.0f',
-            linecolor='rgba(255, 215, 0, 0.2)',
+            linecolor='#e8e6dc',
             showline=True,
-            range=[y_range_min, y_range_max],  # 灵活的Y轴范围
+            range=[y_range_min, y_range_max],
             zeroline=False
         ),
         hoverlabel=dict(
-            bgcolor='rgba(26, 26, 46, 0.98)',
-            bordercolor='rgba(255, 215, 0, 0.5)',
-            font=dict(size=13, color='#e2e8f0', family='Microsoft YaHei')
+            bgcolor='rgba(255, 255, 255, 0.98)',
+            bordercolor='#d97757',
+            font=dict(size=13, color='#141413', family='Poppins')
         )
     )
     
     # 添加注释 - 变动金额
     delta_val = curr_margin - base_margin
     pct_change = (delta_val / base_margin * 100) if base_margin != 0 else 0
-    delta_color = '#10b981' if delta_val >= 0 else '#ef4444'
+    delta_color = '#788c5d' if delta_val >= 0 else '#d97757'
     
     fig.add_annotation(
         x=0.5,
@@ -818,9 +887,9 @@ def create_waterfall_chart(data, dimension_col, title, base_margin, curr_margin,
         yref='paper',
         text=f'<b>变动: ¥{delta_val:+,.0f}</b>  <span style="color: {delta_color}">({pct_change:+.2f}%)</span>',
         showarrow=False,
-        font=dict(size=15, color=delta_color, family='Microsoft YaHei'),
-        bgcolor='rgba(26, 26, 46, 0.9)',
-        bordercolor='rgba(255, 215, 0, 0.3)',
+        font=dict(size=15, color=delta_color, family='Poppins'),
+        bgcolor='rgba(255, 255, 255, 0.95)',
+        bordercolor='#e8e6dc',
         borderwidth=1,
         borderpad=10
     )
@@ -832,47 +901,26 @@ def create_waterfall_chart(data, dimension_col, title, base_margin, curr_margin,
 st.markdown("""
 <div class="title-container">
     <div class="title-glow"></div>
-    <span class="header-icon">🚀</span>
+    <div class="title-decoration">
+        <span class="deco-line left"></span>
+        <span class="deco-icon">◈</span>
+        <span class="deco-line right"></span>
+    </div>
     <h1 class="main-header">单车边际变动归因分析</h1>
+    <p class="sub-header">Unit Margin Attribution Analysis</p>
+    <div class="title-tags">
+        <span class="tag">PVM 归因</span>
+        <span class="tag-dot">·</span>
+        <span class="tag">结构效应</span>
+        <span class="tag-dot">·</span>
+        <span class="tag">费率效应</span>
+    </div>
 </div>
-<p class="sub-header">◆ UNIT MARGIN ATTRIBUTION ANALYSIS ◆</p>
 """, unsafe_allow_html=True)
 
 # ==================== 侧边栏 ====================
 with st.sidebar:
-    # 维度配置
-    if st.session_state.data_loaded:
-        # 数据已加载，使用折叠的expander
-        with st.expander("⚙️ 维度配置", expanded=False):
-            st.caption("设置各维度的显示名称（修改后自动更新）")
-            for dim in ALL_DIMENSIONS:
-                new_value = st.text_input(
-                    f"{dim}",
-                    value=st.session_state.custom_dim_names.get(dim, dim),
-                    key=f"dim_name_{dim}_loaded"
-                )
-                # 如果值改变了，直接更新session_state
-                if new_value != st.session_state.custom_dim_names.get(dim):
-                    st.session_state.custom_dim_names[dim] = new_value
-                    st.rerun()
-    else:
-        # 数据未加载，直接显示配置
-        st.markdown("## ⚙️ 维度配置")
-        st.caption("设置各维度的显示名称")
-        dim_names = get_dim_names()
-        new_dim_names = {}
-        for dim in ALL_DIMENSIONS:
-            new_dim_names[dim] = st.text_input(
-                f"{dim}",
-                value=dim_names.get(dim, dim),
-                key=f"dim_name_{dim}"
-            )
-        if new_dim_names != st.session_state.custom_dim_names:
-            st.session_state.custom_dim_names = new_dim_names
-            st.rerun()
-        st.markdown("---")
-    
-    # 数据中心
+    # 数据中心（放在最上面）
     if st.session_state.data_loaded:
         with st.expander("📁 数据中心", expanded=False):
             uploaded_file = st.file_uploader("上传CSV或Excel文件", type=['csv', 'xlsx', 'xls'], key="uploader_loaded")
@@ -891,11 +939,49 @@ with st.sidebar:
             if df is not None:
                 st.session_state.df = df
                 st.success("✅ 数据已加载")
-                # 首次加载成功，触发rerun来折叠配置区域
                 st.session_state.data_loaded = True
                 st.rerun()
         else:
             df = None
+        
+        # 示例数据按钮
+        st.markdown("---")
+        st.caption("或者体验示例数据")
+        if st.button("📊 加载示例数据", use_container_width=True, type="primary"):
+            df = generate_demo_data()
+            st.session_state.df = df
+            st.session_state.data_loaded = True
+            st.success("✅ 示例数据已加载")
+            st.rerun()
+        st.markdown("---")
+    
+    # 维度配置
+    if st.session_state.data_loaded:
+        with st.expander("⚙️ 维度配置", expanded=False):
+            st.caption("设置各维度的显示名称（修改后自动更新）")
+            for dim in ALL_DIMENSIONS:
+                new_value = st.text_input(
+                    f"{dim}",
+                    value=st.session_state.custom_dim_names.get(dim, dim),
+                    key=f"dim_name_{dim}_loaded"
+                )
+                if new_value != st.session_state.custom_dim_names.get(dim):
+                    st.session_state.custom_dim_names[dim] = new_value
+                    st.rerun()
+    else:
+        st.markdown("## ⚙️ 维度配置")
+        st.caption("设置各维度的显示名称")
+        dim_names = get_dim_names()
+        new_dim_names = {}
+        for dim in ALL_DIMENSIONS:
+            new_dim_names[dim] = st.text_input(
+                f"{dim}",
+                value=dim_names.get(dim, dim),
+                key=f"dim_name_{dim}"
+            )
+        if new_dim_names != st.session_state.custom_dim_names:
+            st.session_state.custom_dim_names = new_dim_names
+            st.rerun()
     
     if df is not None:
         st.session_state.data_loaded = True
@@ -1066,7 +1152,7 @@ if df is not None:
     # ==================== 动态维度图表 ====================
     # 根据下钻顺序依次显示三个维度的图表
     drill_order = st.session_state.drill_order
-    color_schemes = ['gold', 'emerald', 'royal']
+    color_schemes = ['claude', 'warm', 'soft']
     dim_names = get_dim_names()  # 获取当前维度名称配置
     
     for level, dim in enumerate(drill_order):
@@ -1079,6 +1165,23 @@ if df is not None:
         df_level = df.copy()
         is_drilled = False
         drill_info_parts = []
+        
+        for prev_level in range(level):
+            prev_dim = drill_order[prev_level]
+            prev_selection = st.session_state.selected_dims.get(prev_dim)
+            if prev_selection:
+                # 支持多选：使用isin()筛选
+                if isinstance(prev_selection, list):
+                    df_level = df_level[df_level[prev_dim].isin(prev_selection)]
+                    selection_text = ', '.join(prev_selection) if len(prev_selection) <= 3 else f"{len(prev_selection)}项"
+                else:
+                    df_level = df_level[df_level[prev_dim] == prev_selection]
+                    selection_text = prev_selection
+                is_drilled = True
+                drill_info_parts.append(f"{dim_names.get(prev_dim, prev_dim)}: **{selection_text}**")
+        
+        if is_drilled:
+            st.info(f"📍 已筛选 {' → '.join(drill_info_parts)}")
         
         if not df_level.empty:
             # 1. 计算当前视图范围（下钻上下文）的基准指标
@@ -1242,33 +1345,35 @@ with st.expander("📐 PVM效应计算假设说明", expanded=False):
             border-collapse: collapse;
             font-size: 0.9rem;
             margin: 1rem 0;
+            font-family: 'Lora', Georgia, serif;
         }
         .assumption-table th {
-            background: linear-gradient(135deg, rgba(245, 175, 25, 0.3), rgba(255, 215, 0, 0.2));
-            color: #ffd700;
+            background: linear-gradient(135deg, rgba(217, 119, 87, 0.15), rgba(106, 155, 204, 0.1));
+            color: #141413;
             padding: 12px 15px;
             text-align: center;
-            border: 1px solid rgba(255, 215, 0, 0.3);
+            border: 1px solid #e8e6dc;
             font-weight: 600;
+            font-family: 'Poppins', Arial, sans-serif;
         }
         .assumption-table td {
             padding: 10px 15px;
-            border: 1px solid rgba(255, 215, 0, 0.15);
-            color: #e2e8f0;
+            border: 1px solid #e8e6dc;
+            color: #141413;
         }
         .assumption-table tr:nth-child(even) {
-            background: rgba(26, 26, 46, 0.5);
+            background: rgba(250, 249, 245, 0.8);
         }
         .assumption-table tr:hover {
-            background: rgba(255, 215, 0, 0.05);
+            background: rgba(217, 119, 87, 0.08);
         }
         .product-type {
             font-weight: 600;
-            color: #ffd700;
+            color: #d97757;
         }
         .formula {
             font-family: 'Consolas', monospace;
-            color: #94a3b8;
+            color: #b0aea5;
         }
     </style>
     
@@ -1286,16 +1391,16 @@ with st.expander("📐 PVM效应计算假设说明", expanded=False):
         <tr>
             <td class="product-type">0→N产品</td>
             <td class="formula">当期权重 × (当期单车边际 - 基期平均单车边际)</td>
-            <td style="text-align: center; color: #94a3b8;">0</td>
+            <td style="text-align: center; color: #b0aea5;">0</td>
         </tr>
         <tr>
             <td class="product-type">N→0产品</td>
             <td class="formula">- 基期权重 × (基期单车边际 - 基期平均单车边际)</td>
-            <td style="text-align: center; color: #94a3b8;">0</td>
+            <td style="text-align: center; color: #b0aea5;">0</td>
         </tr>
     </table>
     
-    <p style="color: #94a3b8; font-size: 0.85rem; margin-top: 1rem;">
+    <p style="color: #b0aea5; font-size: 0.85rem; margin-top: 1rem;">
         💡 <b>说明：</b>所有计算均在最细颗粒度进行，展示的数值为细分项汇总结果。这样可以避免高层级维度掩盖实际的结构变化。
     </p>
     """, unsafe_allow_html=True)
@@ -1304,21 +1409,22 @@ st.markdown(
     """
     <div style='text-align: center; padding: 2rem 0;'>
         <span style='
-            background: linear-gradient(90deg, #ffd700, #ff8c00, #ffd700); 
+            background: linear-gradient(90deg, #d97757, #6a9bcc, #788c5d); 
             -webkit-background-clip: text; 
             -webkit-text-fill-color: transparent;
-            background-size: 200% auto;
-            font-weight: 700;
+            font-weight: 600;
             font-size: 1.1rem;
-            letter-spacing: 0.15em;
+            letter-spacing: 0.1em;
+            font-family: Poppins, Arial, sans-serif;
         '>
             ✧ 财务分析驾驶舱 ✧
         </span>
         <br/>
-        <span style='color: rgba(148, 163, 184, 0.5); font-size: 0.75rem; letter-spacing: 0.2em;'>
+        <span style='color: #b0aea5; font-size: 0.75rem; letter-spacing: 0.15em; font-family: Poppins, Arial, sans-serif;'>
             PVM MARGIN ANALYSIS | POWERED BY STREAMLIT & PLOTLY
         </span>
     </div>
     """,
     unsafe_allow_html=True
 )
+
